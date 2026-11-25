@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SpeakMate Voice Engine</title>
+<title>Ghufron's SpeakMate AI — Voice Engine</title>
 <style>
 :root{--navy:#10213d;--blue:#2563eb;--muted:#64748b;--line:#e5eaf2}
 *{box-sizing:border-box}
@@ -24,8 +24,8 @@ textarea{width:100%;min-height:110px;margin-top:15px;padding:12px;border:1px sol
 <body>
 <div class="wrap">
   <div class="mic">🎙️</div>
-  <h2>SpeakMate Voice Engine</h2>
-  <p>Ucapkan kalimat dalam bahasa Indonesia. Teks yang dikenali akan dikirim kembali ke SpeakMate AI.</p>
+  <h2>Ghufron's SpeakMate AI</h2>
+  <p>Ucapkan kalimat dalam bahasa Indonesia. Teks yang dikenali akan dikirim kembali ke Ghufron's SpeakMate AI.</p>
   <button id="start" onclick="startListening()">Mulai berbicara</button>
   <button id="stop" class="stop" onclick="stopListening()" disabled>Stop</button>
   <textarea id="transcript" placeholder="Hasil pengenalan suara akan muncul di sini..." readonly></textarea>
@@ -70,11 +70,15 @@ function startListening(){
     let interim='';
     for(let i=event.resultIndex;i<event.results.length;i++){
       const phrase=event.results[i][0].transcript;
-      if(event.results[i].isFinal) finalText += phrase + ' ';
-      else interim += phrase;
+      if(event.results[i].isFinal) {
+        finalText += phrase + ' ';
+        sendToParent('segment', phrase);
+      } else {
+        interim += phrase;
+      }
     }
     document.getElementById('transcript').value=(finalText+interim).trim();
-    if(finalText.trim()) sendToParent('partial',finalText.trim());
+    if(finalText.trim()) 
   };
   recognition.onerror=(event)=>{
     document.getElementById('status').textContent='Pengenalan suara gagal: '+event.error+'. Periksa izin mikrofon dan coba lagi.';
