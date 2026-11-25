@@ -1,105 +1,353 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Ghufron's SpeakMate AI — Voice Engine</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ghufron's SpeakMate AI - Voice Engine</title>
+
 <style>
-:root{--navy:#10213d;--blue:#2563eb;--muted:#64748b;--line:#e5eaf2}
-*{box-sizing:border-box}
-body{margin:0;padding:16px;font-family:Arial,sans-serif;background:#f7f9fd;color:#172033}
-.wrap{max-width:680px;margin:auto;background:white;border:1px solid var(--line);border-radius:16px;padding:20px;text-align:center}
-.mic{font-size:34px;margin:4px}
-h2{font-size:18px;margin:8px 0}
-p{font-size:13px;color:var(--muted);line-height:1.5}
-button{border:0;border-radius:11px;padding:12px 18px;background:var(--blue);color:white;font-weight:600;cursor:pointer}
-button.stop{background:#fff1f2;color:#be123c;border:1px solid #fecdd3}
-button:disabled{opacity:.5;cursor:not-allowed}
-textarea{width:100%;min-height:110px;margin-top:15px;padding:12px;border:1px solid var(--line);border-radius:11px;font:14px/1.5 Arial;resize:vertical}
-.status{font-size:12px;color:var(--muted);min-height:18px;margin-top:10px}
-.actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:12px}
-.secondary{background:#edf2fa;color:#253a5a}
+:root {
+  --navy:#10213d;
+  --blue:#2563eb;
+  --muted:#64748b;
+  --line:#e5eaf2;
+}
+* { box-sizing:border-box; }
+
+body {
+  margin:0;
+  padding:16px;
+  font-family:Arial,sans-serif;
+  background:#f7f9fd;
+  color:#172033;
+}
+
+.wrap {
+  max-width:680px;
+  margin:auto;
+  background:white;
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:20px;
+  text-align:center;
+}
+
+.mic { font-size:34px; margin:4px; }
+h2 { font-size:18px; margin:8px 0; }
+
+p {
+  font-size:13px;
+  color:var(--muted);
+  line-height:1.5;
+}
+
+button {
+  border:0;
+  border-radius:11px;
+  padding:12px 18px;
+  background:var(--blue);
+  color:white;
+  font-weight:600;
+  cursor:pointer;
+}
+
+button.stop {
+  background:#fff1f2;
+  color:#be123c;
+  border:1px solid #fecdd3;
+}
+
+button:disabled {
+  opacity:.5;
+  cursor:not-allowed;
+}
+
+textarea {
+  width:100%;
+  min-height:110px;
+  margin-top:15px;
+  padding:12px;
+  border:1px solid var(--line);
+  border-radius:11px;
+  font:14px/1.5 Arial;
+  resize:vertical;
+}
+
+.status {
+  font-size:12px;
+  color:var(--muted);
+  min-height:18px;
+  margin-top:10px;
+}
+
+.actions {
+  display:flex;
+  justify-content:center;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:12px;
+}
+
+.secondary {
+  background:#edf2fa;
+  color:#253a5a;
+}
 </style>
 </head>
+
 <body>
 <div class="wrap">
-  <div class="mic">🎙️</div>
-  <h2>Ghufron's SpeakMate AI</h2>
-  <p>Ucapkan kalimat dalam bahasa Indonesia. Teks yang dikenali akan dikirim kembali ke Ghufron's SpeakMate AI.</p>
-  <button id="start" onclick="startListening()">Mulai berbicara</button>
-  <button id="stop" class="stop" onclick="stopListening()" disabled>Stop</button>
-  <textarea id="transcript" placeholder="Hasil pengenalan suara akan muncul di sini..." readonly></textarea>
-  <div class="status" id="status">Tekan Mulai berbicara dan izinkan akses mikrofon.</div>
-  <div class="actions">
-    <button class="secondary" onclick="sendText()">Kirim teks ke SpeakMate</button>
-    <button class="secondary" onclick="clearText()">Hapus</button>
-  </div>
-</div>
-<script>
-let recognition=null;
-let listening=false;
-let finalText='';
 
+  <div class="mic">🎙️</div>
+
+  <h2>Ghufron's SpeakMate AI</h2>
+
+  <p>
+    Ucapkan kalimat dalam bahasa Indonesia.
+    Hasil pengenalan suara akan dikirim ke aplikasi
+    Ghufron's SpeakMate AI.
+  </p>
+
+  <button id="start" onclick="startListening()">
+    Mulai berbicara
+  </button>
+
+  <button id="stop" class="stop"
+    onclick="stopListening()" disabled>
+    Stop
+  </button>
+
+  <textarea id="transcript"
+    placeholder="Hasil pengenalan suara akan muncul di sini..."></textarea>
+
+  <div class="status" id="status">
+    Tekan Mulai berbicara dan izinkan akses mikrofon.
+  </div>
+
+  <div class="actions">
+    <button class="secondary" onclick="sendText()">
+      Kirim teks ke SpeakMate
+    </button>
+
+    <button class="secondary" onclick="clearText()">
+      Hapus
+    </button>
+  </div>
+
+</div>
+
+<script>
+let recognition = null;
+let listening = false;
+let finalText = '';
+let sentFinal = false;
+
+const startButton = document.getElementById('start');
+const stopButton = document.getElementById('stop');
+const transcript = document.getElementById('transcript');
+const statusText = document.getElementById('status');
+
+/**
+ * Mengirim hasil suara ke aplikasi utama.
+ */
 function sendToParent(type, text) {
-  if (window.parent && window.parent !== window) {
-    window.parent.postMessage({source:'speakmate-voice-engine',type:type,text:text}, '*');
-  } else if (window.opener && !window.opener.closed) {
-    window.opener.postMessage({source:'speakmate-voice-engine',type:type,text:text}, '*');
+  const message = {
+    source: 'speakmate-voice-engine',
+    type: type,
+    text: String(text || '').trim()
+  };
+
+  if (!message.text) return false;
+
+  try {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage(message, '*');
+      return true;
+    }
+
+    if (window.opener && !window.opener.closed) {
+      window.opener.postMessage(message, '*');
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    statusText.textContent =
+      'Gagal mengirim teks: ' + error.message;
+    return false;
   }
 }
-function startListening(){
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){
-    document.getElementById('status').textContent='Browser ini belum mendukung Web Speech API. Coba Google Chrome terbaru.';
+
+/**
+ * Mengirim hasil akhir hanya satu kali.
+ */
+function sendFinalResult(text) {
+  const cleanText = String(text || '').trim();
+
+  if (!cleanText || sentFinal) return;
+
+  const success = sendToParent('final', cleanText);
+
+  if (success) {
+    sentFinal = true;
+    statusText.textContent =
+      'Teks berhasil dikirim ke SpeakMate AI.';
+  } else {
+    statusText.textContent =
+      'Teks belum terkirim. Gunakan tombol Kirim teks ke SpeakMate.';
+  }
+}
+
+/**
+ * Memulai pengenalan suara.
+ */
+function startListening() {
+  const SpeechRecognition =
+    window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    statusText.textContent =
+      'Browser belum mendukung pengenalan suara. Gunakan Google Chrome terbaru.';
     return;
   }
-  if(listening)return;
-  recognition=new SR();
-  recognition.lang='id-ID';
-  recognition.continuous=true;
-  recognition.interimResults=true;
-  finalText='';
-  document.getElementById('transcript').value='';
-  recognition.onstart=()=>{
-    listening=true;
-    document.getElementById('start').disabled=true;
-    document.getElementById('stop').disabled=false;
-    document.getElementById('status').textContent='Mendengarkan... Silakan berbicara.';
+
+  if (listening) return;
+
+  recognition = new SpeechRecognition();
+
+  recognition.lang = 'id-ID';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
+
+  finalText = '';
+  sentFinal = false;
+  transcript.value = '';
+
+  recognition.onstart = function() {
+    listening = true;
+
+    startButton.disabled = true;
+    stopButton.disabled = false;
+
+    statusText.textContent =
+      'Mendengarkan... Silakan berbicara.';
   };
-  recognition.onresult=(event)=>{
-    let interim='';
-    for(let i=event.resultIndex;i<event.results.length;i++){
-      const phrase=event.results[i][0].transcript;
-      if(event.results[i].isFinal) {
+
+  recognition.onresult = function(event) {
+    let interimText = '';
+
+    for (
+      let i = event.resultIndex;
+      i < event.results.length;
+      i++
+    ) {
+      const result = event.results[i];
+      const phrase = result[0].transcript;
+
+      if (result.isFinal) {
         finalText += phrase + ' ';
-        sendToParent('segment', phrase);
       } else {
-        interim += phrase;
+        interimText += phrase;
       }
     }
-    document.getElementById('transcript').value=(finalText+interim).trim();
+
+    transcript.value =
+      (finalText + interimText).trim();
   };
-  recognition.onerror=(event)=>{
-    document.getElementById('status').textContent='Pengenalan suara gagal: '+event.error+'. Periksa izin mikrofon dan coba lagi.';
+
+  recognition.onerror = function(event) {
+    const errors = {
+      'not-allowed':
+        'Akses mikrofon ditolak. Izinkan mikrofon pada browser.',
+      'audio-capture':
+        'Mikrofon tidak ditemukan atau sedang digunakan aplikasi lain.',
+      'no-speech':
+        'Suara tidak terdeteksi. Silakan coba berbicara kembali.',
+      'network':
+        'Koneksi internet bermasalah saat mengenali suara.',
+      'aborted':
+        'Pengenalan suara dihentikan.'
+    };
+
+    statusText.textContent =
+      errors[event.error] ||
+      'Pengenalan suara gagal: ' + event.error;
   };
-  recognition.onend=()=>{
-    listening=false;
-    document.getElementById('start').disabled=false;
-    document.getElementById('stop').disabled=true;
-    document.getElementById('status').textContent='Selesai. Periksa teks, lalu kirim ke SpeakMate.';
-    if(finalText.trim()) sendToParent('final',finalText.trim());
+
+  recognition.onend = function() {
+    listening = false;
+
+    startButton.disabled = false;
+    stopButton.disabled = true;
+
+    if (finalText.trim()) {
+      transcript.value = finalText.trim();
+      sendFinalResult(finalText);
+    } else if (!transcript.value.trim()) {
+      statusText.textContent =
+        'Belum ada suara yang berhasil dikenali.';
+    }
   };
-  try{recognition.start();}
-  catch(e){document.getElementById('status').textContent='Tidak dapat memulai mikrofon: '+e.message;}
+
+  try {
+    recognition.start();
+  } catch (error) {
+    listening = false;
+    startButton.disabled = false;
+    stopButton.disabled = true;
+
+    statusText.textContent =
+      'Tidak dapat memulai mikrofon: ' + error.message;
+  }
 }
-function stopListening(){if(recognition&&listening)recognition.stop();}
-function sendText(){
-  const text=document.getElementById('transcript').value.trim();
-  if(!text){document.getElementById('status').textContent='Belum ada teks untuk dikirim.';return;}
-  sendToParent('final',text);
-  document.getElementById('status').textContent='Teks dikirim ke SpeakMate AI.';
+
+/**
+ * Menghentikan pengenalan suara.
+ */
+function stopListening() {
+  if (recognition && listening) {
+    statusText.textContent =
+      'Mengakhiri rekaman...';
+
+    recognition.stop();
+  }
 }
-function clearText(){finalText='';document.getElementById('transcript').value='';document.getElementById('status').textContent='Teks dihapus.';}
+
+/**
+ * Mengirim teks secara manual.
+ */
+function sendText() {
+  const text = transcript.value.trim();
+
+  if (!text) {
+    statusText.textContent =
+      'Belum ada teks untuk dikirim.';
+    return;
+  }
+
+  sentFinal = false;
+  sendFinalResult(text);
+}
+
+/**
+ * Menghapus teks.
+ */
+function clearText() {
+  if (listening && recognition) {
+    recognition.stop();
+  }
+
+  finalText = '';
+  sentFinal = false;
+  transcript.value = '';
+
+  statusText.textContent =
+    'Teks berhasil dihapus.';
+}
 </script>
+
 </body>
 </html>
