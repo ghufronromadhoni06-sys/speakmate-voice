@@ -78,7 +78,6 @@ function startListening(){
       }
     }
     document.getElementById('transcript').value=(finalText+interim).trim();
-    if(finalText.trim()) 
   };
   recognition.onerror=(event)=>{
     document.getElementById('status').textContent='Pengenalan suara gagal: '+event.error+'. Periksa izin mikrofon dan coba lagi.';
